@@ -8,11 +8,9 @@ import Gihon.task.manager.util.error.StatusConvertException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import org.hibernate.validator.constraints.UniqueElements;
 
 @Data
 public class TaskCreateRequest {
-    //@UniqueElements(message = "Title should not be unique")
     @Size(min = 3, max = 100, message = "The title must be greater than 3 and less than 100")
     @NotNull(message = "Title should not be empty")
     String title;

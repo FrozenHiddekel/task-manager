@@ -31,4 +31,6 @@ public class JwtCore {
     public String getNameFromJvt(String token){
         return Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody().getSubject();
     }
+
+
 }

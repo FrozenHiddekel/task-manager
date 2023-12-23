@@ -4,13 +4,10 @@ import Gihon.task.manager.DTO.CommentPostRequest;
 import Gihon.task.manager.DTO.TaskStatusUpdateRequest;
 import Gihon.task.manager.DTO.TaskCreateRequest;
 import Gihon.task.manager.DTO.TaskExecutorRequest;
-import Gihon.task.manager.models.Comment;
 import Gihon.task.manager.models.Task;
-import Gihon.task.manager.models.TaskUser;
 import Gihon.task.manager.services.CommentService;
 import Gihon.task.manager.services.TaskService;
 import Gihon.task.manager.services.UserService;
-import Gihon.task.manager.util.SpringUtil;
 import Gihon.task.manager.util.error.*;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
@@ -59,20 +56,11 @@ public class TaskController {
     public ResponseEntity<?> create(Principal principal,
                                   @RequestBody @Valid TaskCreateRequest request,
                                   BindingResult bindingResult){
-        if(taskService.isTitleInUse(request.getTitle())){
-            throw new TitleAlreadyInUseException();
+        try {
+            taskService.create(principal, request, bindingResult);
+        } catch (Exception e){
+            throw e;
         }
-        if (bindingResult.hasErrors()){
-            String errorMsg =  SpringUtil.BindingResultGetError(bindingResult);
-            throw new TaskNotCreatedException(errorMsg);
-        }
-        Task task = new Task();
-        task.setAuthor(userService.findByEmail(principal.getName()));
-        task.setTitle(request.getTitle());
-        task.setDescription(request.getDescription());
-        task.setPriority(request.getPriority()==null ? null : request.getPriority().toString());
-        task.setStatus(request.getStatus()==null ? null : request.getStatus().toString());
-        taskService.save(task);
         return ResponseEntity.ok("Task creation was successful");
 
     }
@@ -80,111 +68,67 @@ public class TaskController {
     @PatchMapping("{id}/patch")
     @ApiResponse(description = "Обновление задачи её автором")
     public ResponseEntity<?> patch(@PathVariable int id, Principal principal,
-                                    @RequestBody @Valid TaskCreateRequest request,
-                                    BindingResult bindingResult){
-        if (bindingResult.hasErrors()){
-            String errorMsg =  SpringUtil.BindingResultGetError(bindingResult);
-            throw new TaskNotCreatedException(errorMsg);
+                                   @RequestBody @Valid TaskCreateRequest request,
+                                   BindingResult bindingResult){
+        try {
+            taskService.update(id, principal, request, bindingResult);
+        } catch (Exception e){
+            throw e;
         }
-        Task task = taskService.findById(id);
-        int inputId = userService.findByEmail(principal.getName()).getId();
-        boolean isNotAuthor = !(inputId==task.getAuthor().getId());
-        if (isNotAuthor){
-            CustomErrorResponse response =new CustomErrorResponse("You are not the author of this task");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        task.setTitle(request.getTitle());
-        task.setDescription(request.getDescription());
-        task.setPriority(request.getPriority()==null ? null : request.getPriority().toString());
-        task.setStatus(request.getStatus()==null ? null : request.getStatus().toString());
-        taskService.save(task);
+
         return ResponseEntity.ok("Task update was successful");
     }
 
     @PostMapping("/{id}")
     @ApiResponse(description = "Написание комментария к задаче")
     public ResponseEntity<?> postComment(@PathVariable("id")int id,
-                            Principal principal,
-                            @RequestBody @Valid CommentPostRequest request,
-                            BindingResult bindingResult){
-        if(bindingResult.hasErrors()){
-            if (bindingResult.hasErrors()){
-                String errorMsg =  SpringUtil.BindingResultGetError(bindingResult);
-                throw new CommentNotCreatedException(errorMsg);
-            }
-        }
-        Task task = taskService.findById(id);
-
-        Comment comment = new Comment();
-        comment.setMessage(request.getCommentText());
-        comment.setAuthor(userService.findByEmail(principal.getName()));
-        comment.setTask(task);
-        commentService.save(comment);
-        return ResponseEntity.ok("Comment post was successful");
+                                         Principal principal,
+                                         @RequestBody @Valid CommentPostRequest request,
+                                         BindingResult bindingResult){
+       try {
+           commentService.create(id, principal, request, bindingResult);
+       } catch (Exception e){
+           throw e;
+       }
+       return ResponseEntity.ok("Comment post was successful");
     }
 
     @DeleteMapping("/{id}")
     @ApiResponse(description = "Удаление задачи")
     public ResponseEntity<?> deleteTask(@PathVariable("id") int id,Principal principal) {
-        Task task = taskService.findById(id);
-        int inputId = userService.findByEmail(principal.getName()).getId();
-        boolean isNotAuthor = !(inputId==task.getAuthor().getId());
-        if (isNotAuthor){
-            CustomErrorResponse response =new CustomErrorResponse("You are not the author this task");
-            return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+        try {
+            taskService.deleteTask(id, principal);
+        } catch (Exception e){
+            throw e;
         }
-        taskService.deleteById(id);
         return ResponseEntity.ok("Task was deleted");
     }
 
     @PatchMapping("/{id}/status")
     @ApiResponse(description = "Обновление задачи автором или исполнителем")
     public ResponseEntity<?> updateStatus(@PathVariable("id")int id,
-                                         Principal principal,
-                                         @RequestBody @Valid TaskStatusUpdateRequest request,
-                                         BindingResult bindingResult) {
-        if(bindingResult.hasErrors()){
-            if (bindingResult.hasErrors()){
-                String errorMsg =  SpringUtil.BindingResultGetError(bindingResult);
-                throw new CommentNotCreatedException(errorMsg);
-            }
+                                          Principal principal,
+                                          @RequestBody @Valid TaskStatusUpdateRequest request,
+                                          BindingResult bindingResult) {
+        try {
+            taskService.updateStatus(id , principal, request, bindingResult);
+        } catch (Exception e){
+            throw e;
         }
-        Task task = taskService.findById(id);
-        int inputId = userService.findByEmail(principal.getName()).getId();
-        boolean isNotExecutor = task.getExecutor()==null ? true : inputId!=task.getExecutor().getId();
-        boolean isNotAuthor = !(inputId==task.getAuthor().getId());
-        if(isNotAuthor && isNotExecutor){
-            CustomErrorResponse response =new CustomErrorResponse("You are not the author or executor of this task");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-
-        task.setStatus(request.getStatus().toString());
-        taskService.save(task);
         return ResponseEntity.ok("Task status has been updated");
     }
 
     @PatchMapping("/{id}/executor")
     @ApiResponse(description = "Обновление исполнителя задачи")
     public ResponseEntity<?> updateExecutor(@PathVariable("id")int id,
-                                          Principal principal,
-                                          @RequestBody @Valid TaskExecutorRequest request,
-                                          BindingResult bindingResult) {
-        if(bindingResult.hasErrors()){
-            if (bindingResult.hasErrors()){
-                String errorMsg =  SpringUtil.BindingResultGetError(bindingResult);
-                throw new CommentNotCreatedException(errorMsg);
-            }
+                                            Principal principal,
+                                            @RequestBody @Valid TaskExecutorRequest request,
+                                            BindingResult bindingResult) {
+        try {
+            taskService.updateExecutor(id, principal, request, bindingResult);
+        } catch (Exception e){
+            throw e;
         }
-        Task task = taskService.findById(id);
-        int inputId = userService.findByEmail(principal.getName()).getId();
-        boolean isNotAuthor = !(inputId==task.getAuthor().getId());
-        if(isNotAuthor){
-            CustomErrorResponse response =new CustomErrorResponse("You are not the author of this task");
-            return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
-        }
-        TaskUser newExecutor = userService.findByEmail(request.getEmail());
-        task.setExecutor(newExecutor);
-        taskService.save(task);
         return ResponseEntity.ok("Task executor has been updated");
     }
 
@@ -204,6 +148,18 @@ public class TaskController {
     private ResponseEntity<CustomErrorResponse> handleException(TitleAlreadyInUseException e){
         CustomErrorResponse response = new CustomErrorResponse(e.getMessage());
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler
+    private ResponseEntity<CustomErrorResponse> handleException(NotAuthorException e){
+        CustomErrorResponse response = new CustomErrorResponse(e.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler
+    private ResponseEntity<CustomErrorResponse> handleException(NotAuthorOrExecutorException e){
+        CustomErrorResponse response = new CustomErrorResponse(e.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler

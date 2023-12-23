@@ -5,7 +5,6 @@ import Gihon.task.manager.util.error.StatusConvertException;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 
-//@Data
 public class TaskStatusUpdateRequest {
     @Enumerated(EnumType.ORDINAL)
     Status status;
