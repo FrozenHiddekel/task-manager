@@ -47,7 +47,7 @@ public class SecurityController {
 
     @PostMapping("/signin")
     @ApiResponse(description = "Авторизация пользователя")
-    ResponseEntity<?> signIn(@RequestBody TaskUserSignInRequest signInRequest){
+    public ResponseEntity<?> signIn(@RequestBody TaskUserSignInRequest signInRequest){
        return userService.signIn(signInRequest);
     }
 

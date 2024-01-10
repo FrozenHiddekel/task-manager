@@ -12,6 +12,7 @@ import Gihon.task.manager.util.error.*;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -24,8 +25,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/task")
 public class TaskController {
+    @Autowired
     private final TaskService taskService;
+
+    @Autowired
     private final UserService userService;
+
+    @Autowired
     private final CommentService commentService;
 
 
